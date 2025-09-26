@@ -7,8 +7,7 @@ Original file is located at
     https://colab.research.google.com/github/Sujitha-2726/Stock_Price_Prediction_lstm/blob/main/Stock_Price_Prediction1.ipynb
 """
 
-!pip install yfinance matplotlib scikit-learn tensorflow
-
+import streamlit as st
 import yfinance as yf
 import datetime as dt
 import numpy as np
@@ -20,7 +19,7 @@ from keras.layers import Dense, Dropout, LSTM
 from keras.models import Sequential
 
 stock = "AAPL"
-data = yf.download(stock, start="2015-01-01", end="2025-11-01")
+data = yf.download(stock, start=str("2015-01-01"), end=str("2025-11-01"))
 data = data.reset_index()
 
 data.shape
@@ -37,7 +36,7 @@ plt.title(f'{stock} Closing prices over time')
 plt.xlabel('Date')
 plt.ylabel('Closing Price (USD)')
 plt.legend()
-plt.show()
+st.pyplot(plt.gcf())
 
 plt.figure(figsize=(12, 6))
 plt.plot(data['Open'], label=f'{stock} Opening Price', linewidth=2)
@@ -45,7 +44,7 @@ plt.title(f'{stock} Opening prices over time')
 plt.xlabel('Date')
 plt.ylabel('Opening Price (USD)')
 plt.legend()
-plt.show()
+st.pyplot(plt.gcf())
 
 plt.figure(figsize=(12, 6))
 plt.plot(data['High'], label=f'{stock} High Price', linewidth=2)
@@ -53,7 +52,7 @@ plt.title(f'{stock} High prices over time')
 plt.xlabel('Date')
 plt.ylabel('High Price (USD)')
 plt.legend()
-plt.show()
+st.pyplot(plt.gcf())
 
 plt.figure(figsize=(12, 6))
 plt.plot(data['Low'], label=f'{stock} Low Price', linewidth=2)
@@ -61,7 +60,7 @@ plt.title(f'{stock} Low prices over time')
 plt.xlabel('Date')
 plt.ylabel('Low Price (USD)')
 plt.legend()
-plt.show()
+st.pyplot(plt.gcf())
 
 plt.figure(figsize=(12, 6))
 plt.plot(data['Volume'], label=f'{stock} Volume ', linewidth=2)
@@ -69,16 +68,20 @@ plt.title(f'{stock} Volume over time')
 plt.xlabel('Date')
 plt.ylabel('Volume (USD)')
 plt.legend()
-plt.show()
+st.pyplot(plt.gcf())
 
 # Candlestick
 fig = go.Figure(data=[go.Candlestick(x=data['Date'], open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'])])
 fig.update_layout(xaxis_rangeslider_visible=False, title=f'{stock} Candlestick Chart')
-fig.show()
+st.plotly_chart(fig)
 
 # Training and Testing
-data_training = pd.DataFrame(data['Close'][0:int(len(data) * 0.70)])
-data_testing = pd.DataFrame(data['Close'][int(len(data) * 0.70):])
+split=st.slider('Training data ratio', min_value=0.5, max_value=0.9, value=0.7)
+train_idx = int(len(data) * split) 
+data_training = pd.DataFrame(data['Close'][:train_idx])
+data_testing = pd.DataFrame(data['Close'][train_idx:])
+st.write("Training Data Sample", data_training.head())
+st.write("Testing Data Sample", data_testing.head()) 
 
 # Scale the Training Data
 scaler = MinMaxScaler(feature_range=(0, 1))
@@ -115,8 +118,11 @@ model.add(Dropout(0.5))
 
 model.add(Dense(units=1))
 
+st.write("Compiling and training the model...")
+epochs = st.slider('Number of epochs', 10, 200, 50)
 model.compile(optimizer='adam', loss='mean_squared_error')
-model.fit(x_train, y_train, epochs=50)
+model.fit(x_train, y_train, epochs=epochs)
+st.write('Model training complete')
 
 # Preparing test data for prediction
 past_100_days = data_training.tail(100)
@@ -144,6 +150,6 @@ plt.title('Stock Price Prediction')
 plt.xlabel('Time')
 plt.ylabel('Price')
 plt.legend()
-plt.show()
+st.pyplot(plt.gcf())
 
 model.save('Stock_Price_Prediction1.keras')
